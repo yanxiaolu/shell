@@ -10,16 +10,25 @@ ftp目录：./data
 '''
 
 import cx_Oracle
-import time
+import time as t
+from datetime import *
 import os
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
+def fremove(datadir):
+    if datetime.today().isoweekday() == 4:
+        for r in os.listdir(datadir):
+            datafile = os.path.join(datadir, r)
+            if datetime.today().replace(day=1) > datetime.fromtimestamp(os.path.getctime(datafile)):
+                os.remove(datafile)
 
-while True:
-    starttime = time.time()
-    con = cx_Oracle.connect('UserName/Password@DBHost/DBName')
+def rad_mo(filename,logfile):
+    f = open(filename,"w")
+    l = open(logfile,"a")
+    starttime = t.time()
+    con = cx_Oracle.connect('username/Password@localhost/dbName')
     cur = con.cursor()
     cur.execute('''
     select rad.xx||'|'||to_char(sysdate-1/24/12,'yyyy-mm-dd hh24:mi')
@@ -32,13 +41,9 @@ while True:
     group by a.zones) rec
     where rad.xx = rec.xx order by rec.zhtj desc
     ''')
-    filename = '/tmp/yxjk'+time.strftime("%Y%m%d%H%M", time.localtime())+'.txt'
-    logfile = '/tmp/yxjk.log'
-    f = open(filename,"w")
-    l = open(logfile,"a")
     for r in cur:
         f.write(r[0]+'\n')
-    elapsed = (time.time()-starttime)
+    elapsed = (t.time()-starttime)
     l.write('elapsed:'+str(elapsed)+'\n')
     l.write('close file.... \n')
     f.close()
@@ -47,4 +52,12 @@ while True:
     l.write('close connection... \n')
     con.close()
     l.write('wating 300 secend... ...\n')
-    time.sleep(300)
+
+if __name__=="__main__":
+    datadir = '/eater/radius_mo.d/data/'
+    logfile = '/eater/radius_mo.d/log/yxjk.log'
+    while True:
+        filename = '/eater/radius_mo.d/data/yxjk'+datetime.today().strftime('%Y%m%d%H%M')+'.txt'
+        fremove(datadir)
+        rad_mo(filename,logfile)
+        t.sleep(300)
